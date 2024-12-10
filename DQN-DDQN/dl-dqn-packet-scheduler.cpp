@@ -15,7 +15,7 @@
 // 帶參數的建構子：初始化 DQN 訓練器
 DL_DQN_PacketScheduler::DL_DQN_PacketScheduler(int input_size, int output_size)
     : train_step(0), target_update_frequency(100)
-{   // 初始化訓練步數與目標網路更新頻率
+{ // 初始化訓練步數與目標網路更新頻率
     // 初始化 DQNTrainer，傳入輸入、輸出維度、折扣因子、學習率和目標網路更新頻率
     m_dqnTrainer = new DQNTrainer(input_size, output_size, 0.99f, 0.001f, target_update_frequency);
     SetMacEntity(nullptr);   // 初始化 MAC 實體
@@ -156,16 +156,26 @@ float DL_DQN_PacketScheduler::ComputeReward(RadioBearer *bearer)
     double rate = bearer->GetAverageTransmissionRate();
 
     // 獎勵函數：減少延遲，提高吞吐量
-    float reward = static_cast<float>(rate - HOL);
+    double max_rate = 100000;
+    double min_delay = 0.001;
 
-    if (rate > 100000)
-    {
-        reward += 10; // 獎勵高吞吐量
-    }
-    if (HOL < 0.001)
-    {
-        reward += 5; // 獎勵低延遲
-    }
+    double delay_reward = (min_delay / (HOL + min_delay));
 
-    return reward;
+    double rate_reward = (rate / max_rate);
+
+    double total_reward = 0.5 * delay_reward + 0.5 * rate_reward;
+
+    return total_reward;
+}
+
+// 保存模型
+void DL_DQN_PacketScheduler::SaveModel(const std::string &model_path)
+{
+    m_dqnTrainer->save_model(model_path);
+}
+
+// 加載模型
+void DL_DQN_PacketScheduler::LoadModel(const std::string &model_path)
+{
+    m_dqnTrainer->load_model(model_path);
 }
